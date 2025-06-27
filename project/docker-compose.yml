@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Flask app
+  flask-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.flask
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+    volumes:
+      - ./dist:/app/dist
+    depends_on:
+      - frontend-build
+
+  # FastAPI app (alternative)
+  fastapi-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=production
+    volumes:
+      - ./dist:/app/dist
+    depends_on:
+      - frontend-build
+
+  # Frontend build service
+  frontend-build:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "npm install && npm run build"
+    environment:
+      - NODE_ENV=production
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./dist:/usr/share/nginx/html
+    depends_on:
+      - flask-app
